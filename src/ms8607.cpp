@@ -1,6 +1,15 @@
 #include "ms8607.h"
-#include <Wire.h>
 
+// If Teensy, use i2c_t3, otherwise use Wire for I2C
+#if !defined(I2C_T3_H) && (defined(__MK20DX128__) || defined(__MK20DX256__) || defined(__MKL26Z64__) || \
+                           defined(__MK64FX512__) || defined(__MK66FX1M0__)) // 3.0/3.1-3.2/LC/3.5/3.6
+  #include <i2c_t3.h>
+#else 
+  #include <Wire.h>
+#endif  
+
+
+// TODO all these #defines should be in the header file!
 // HSENSOR device address
 #define HSENSOR_ADDR 0x40 // 0b1000000
 
@@ -128,6 +137,8 @@ void ms8607::begin(void) {
  *       - true : Device is present
  *       - false : Device is not acknowledging I2C address
   */
+// TODO This is not a valid I2C message: address and nothing else.
+// Not recommended in the data sheet.
 bool ms8607::is_connected(void) {
   return (hsensor_is_connected() && psensor_is_connected());
 }
@@ -139,16 +150,28 @@ bool ms8607::is_connected(void) {
  *       - ms8607_status_ok : I2C transfer completed successfully
  *       - ms8607_status_i2c_transfer_error : Problem with i2c transfer
  *       - ms8607_status_no_i2c_acknowledge : I2C did not acknowledge
+ *
  */
-enum ms8607_status ms8607::reset(void) {
+// ERROR TODO if doesn't connect then never ever is reset! Even though execution
+// goes on into loop!
+
+enum ms8607_status ms8607::reset(void) 
+{
   enum ms8607_status status;
 
+  // TODO Can't tell which one fails by return values!
   status = hsensor_reset();
   if (status != ms8607_status_ok)
+  {
+    Serial.printf("MS8607 humidity reset failed\n");
     return status;
+  }
   status = psensor_reset();
   if (status != ms8607_status_ok)
+  {
+    Serial.printf("MS8607 pressure reset failed\n");
     return status;
+  }
 
   return ms8607_status_ok;
 }
@@ -311,9 +334,23 @@ ms8607::read_temperature_pressure_humidity(float *t, float *p, float *h) {
  *       - true : Device is present
  *       - false : Device is not acknowledging I2C address
   */
-bool ms8607::hsensor_is_connected(void) {
+// This does not work; hsensor fails with NACK
+bool ms8607::hsensor_is_connected(void) 
+{
+  uint8_t stat;
+
   Wire.beginTransmission(HSENSOR_ADDR);
-  return (Wire.endTransmission() == 0);
+  Wire.write(HSENSOR_RESET_COMMAND);  // should return 1
+  stat = Wire.endTransmission();
+  if (0 == stat)
+  {
+    return true;
+  }
+  else 
+  {
+    Serial.printf("Hsensor is_connected failed with %u\n", stat);
+    return false;
+  }
 }
 
 /**
@@ -654,9 +691,20 @@ enum ms8607_status ms8607::get_dew_point(float temperature,
  *       - true : Device is present
  *       - false : Device is not acknowledging I2C address
   */
-bool ms8607::psensor_is_connected(void) {
+bool ms8607::psensor_is_connected(void) 
+{
   Wire.beginTransmission(PSENSOR_ADDR);
-  return (Wire.endTransmission() == 0);
+  uint8_t stat;
+  stat = Wire.endTransmission();
+  if (0 == stat)
+  {
+    return true;
+  }
+  else 
+  {
+    Serial.printf("Psensor is_connected failed with %u\n", stat);
+    return false;
+  }
 }
 
 /**
@@ -667,6 +715,7 @@ bool ms8607::psensor_is_connected(void) {
  *       - ms8607_status_i2c_transfer_error : Problem with i2c transfer
  *       - ms8607_status_no_i2c_acknowledge : I2C did not acknowledge
  */
+  // TODO no return value! BUG
 enum ms8607_status ms8607::psensor_reset(void) {
   Wire.beginTransmission((uint8_t)PSENSOR_ADDR);
   Wire.write(PSENSOR_RESET_COMMAND);

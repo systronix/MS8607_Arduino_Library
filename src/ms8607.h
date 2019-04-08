@@ -1,11 +1,8 @@
-#if defined(ARDUINO) && ARDUINO >= 100
 #include "Arduino.h"
-#else
-#include "WProgram.h"
-#endif
 
 enum ms8607_humidity_i2c_master_mode { ms8607_i2c_hold, ms8607_i2c_no_hold };
 
+// TODO why status PLUS status_code?
 enum ms8607_status {
   ms8607_status_ok,
   ms8607_status_no_i2c_acknowledge,
@@ -34,6 +31,7 @@ enum ms8607_pressure_resolution {
   ms8607_pressure_resolution_osr_8192
 };
 
+// TODO why status PLUS status_code?
 enum i2c_status_code {
   i2c_status_ok = 0x00,
   i2c_status_err_overflow = 0x01,
