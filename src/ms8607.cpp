@@ -127,7 +127,7 @@ ms8607::ms8607(void)
  * \brief Perform initial configuration. Has to be called once.
  */
 void ms8607::begin(void) {
-  Wire.begin();
+  Wire.begin(100000);
 }
 
 /**
@@ -140,7 +140,14 @@ void ms8607::begin(void) {
 // TODO This is not a valid I2C message: address and nothing else.
 // Not recommended in the data sheet.
 bool ms8607::is_connected(void) {
-  return (hsensor_is_connected() && psensor_is_connected());
+  // return (hsensor_is_connected() && psensor_is_connected());
+  bool pstat, hstat;
+  hstat = hsensor_is_connected();
+  pstat = psensor_is_connected();
+  //hstat = hsensor_is_connected();
+  Serial.printf("is_connected pstat=%u, hstat=%u\n", pstat, hstat);
+  return (pstat && hstat);
+  // return (psensor_is_connected() && hsensor_is_connected() );
 }
 
 /**
@@ -344,6 +351,7 @@ bool ms8607::hsensor_is_connected(void)
   stat = Wire.endTransmission();
   if (0 == stat)
   {
+    // Serial.printf("Hsensor is_connected OK with %u\n", stat);
     return true;
   }
   else 

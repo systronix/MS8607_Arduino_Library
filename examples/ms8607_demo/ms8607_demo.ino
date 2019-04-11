@@ -34,6 +34,15 @@ void setup()
   // TODO cleanup and improve
   // never resets if this connect fails!
   // which means calibration PROM may never get loaded! See data sheet 09/2015 Page 13
+  if (m_ms8607.is_connected() != true)
+  {
+    Serial.printf("First is_connected FAILed\n");
+  }
+  else
+  {
+    Serial.printf("First is_connected OK\n");
+  }
+
   if (m_ms8607.is_connected() == true) 
   {
     status = m_ms8607.reset(); 
